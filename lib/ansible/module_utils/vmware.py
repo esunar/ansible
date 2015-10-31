@@ -23,12 +23,14 @@ try:
     import time
     # requests is required for exception handling of the ConnectionError
     import requests
+    import ssl
     from pyVim import connect
     from pyVmomi import vim, vmodl
     HAS_PYVMOMI = True
 except ImportError:
     HAS_PYVMOMI = False
 
+requests.packages.urllib3.disable_warnings()
 
 class TaskError(Exception):
     pass
@@ -108,6 +110,14 @@ def vmware_argument_spec():
 
 
 def connect_to_api(module, disconnect_atexit=True):
+    try:
+        _create_unverified_https_context = ssl._create_unverified_context
+    except AttributeError:
+        # Legacy Python that doesn't verify HTTPS certificates by default
+        pass
+    else:
+        ssl._create_default_https_context = _create_unverified_https_context
+
 
     hostname = module.params['hostname']
     username = module.params['username']
